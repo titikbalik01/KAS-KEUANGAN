@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1e40af">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pembukuan">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Pembukuan</title>
+<style>
+  :root{
+    --bg:#f3f5f9; --card:#ffffff; --text:#172033; --muted:#6b7385; --line:#e6e9f0;
+    --in:#12a05c; --in-bg:#e6f6ee; --out:#dc3b30; --out-bg:#fdecea;
+    --accent:#2c5fe6; --accent-bg:#eaf0ff; --shadow:0 1px 2px rgba(20,30,60,.06),0 4px 14px rgba(20,30,60,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f131b; --card:#181e29; --text:#e9ecf3; --muted:#96a0b4; --line:#273041;
+      --in:#34c27f; --in-bg:#12301f; --out:#ff6b5e; --out-bg:#3a1a18;
+      --accent:#6f95f5; --accent-bg:#1c2a4d; --shadow:none;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding:20px 16px 64px}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  header h1{font-size:24px;margin:0;letter-spacing:-.02em}
+  header p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .periode{display:flex;align-items:center;gap:8px}
+  .periode label{margin:0}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+  .card{background:var(--card);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);border:1px solid var(--line);position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--accent))}
+  .card.in{--c:var(--in)} .card.out{--c:var(--out)}
+  .card small{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  .card b{font-size:22px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .pos{color:var(--in)} .neg{color:var(--out)}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .panel h2{font-size:16px;margin:0 0 14px}
+
+  label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+  input,select,button{font:inherit;color:var(--text)}
+  input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);outline:none;transition:border-color .15s,box-shadow .15s}
+  input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+  button{padding:10px 16px;border:1px solid var(--line);border-radius:10px;background:var(--card);cursor:pointer;font-weight:500;transition:background .15s,border-color .15s}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{filter:brightness(1.08)}
+
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px}
+  .seg button{border:none;background:transparent;padding:9px;border-radius:9px;color:var(--muted)}
+  .seg button.on[data-v="out"]{background:var(--out-bg);color:var(--out)}
+  .seg button.on[data-v="in"]{background:var(--in-bg);color:var(--in)}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:12px}
+  .form-grid .full{grid-column:1/-1}
+  .rp{position:relative}
+  .rp span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:600;pointer-events:none}
+  .rp input{padding-left:40px;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+  .actions{display:flex;gap:8px;margin-top:14px}
+
+  .filters{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+  .filters .full{grid-column:1/-1}
+
+  .list{border-top:1px solid var(--line)}
+  .row{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 2px;border-bottom:1px solid var(--line);align-items:center}
+  .row .main{min-width:0}
+  .row .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600}
+  .badge.in{background:var(--in-bg);color:var(--in)}
+  .badge.out{background:var(--out-bg);color:var(--out)}
+  .row .date{font-size:12px;color:var(--muted)}
+  .row .note{color:var(--muted);font-size:13px;margin-top:2px;overflow-wrap:anywhere}
+  .row .amt{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .row .amt.in{color:var(--in)} .row .amt.out{color:var(--out)}
+  .row .acts{grid-column:2;text-align:right}
+  .link{border:none;background:none;padding:2px 6px;font-size:13px;color:var(--accent);border-radius:6px}
+  .link.del{color:var(--out)}
+  .link:hover{background:var(--bg)}
+  .empty{padding:32px 12px;text-align:center;color:var(--muted)}
+
+  .tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .tools button{font-size:13px;padding:8px 12px}
+  .hint{color:var(--muted);font-size:12px;margin-top:12px}
+
+  @media(max-width:640px){
+    .wrap{padding:14px 12px 56px}
+    .cards{grid-template-columns:1fr 1fr}
+    .cards .card:last-child{grid-column:1/-1}
+    .card b{font-size:19px}
+    .form-grid{grid-template-columns:1fr 1fr}
+    .form-grid .full{grid-column:1/-1}
+    .filters{grid-template-columns:1fr 1fr}
+    .filters .full{grid-column:1/-1}
+    .actions button{flex:1}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Pembukuan</h1>
+      <p id="subtitle">Ringkasan keuangan</p>
+    </div>
+  </header>
+
+  <div class="cards">
+    <div class="card in"><small>Pemasukan</small><b class="pos" id="sumIn">Rp 0</b></div>
+    <div class="card out"><small>Pengeluaran</small><b class="neg" id="sumOut">Rp 0</b></div>
+    <div class="card"><small>Saldo</small><b id="sumBal">Rp 0</b></div>
+  </div>
+
+  <div class="panel">
+    <h2 id="formTitle">Catat transaksi</h2>
+    <form id="form" autocomplete="off">
+      <div class="seg" id="seg">
+        <button type="button" data-v="out" class="on">Pengeluaran</button>
+        <button type="button" data-v="in">Pemasukan</button>
+      </div>
+      <div class="form-grid">
+        <div>
+          <label for="fDate">Tanggal</label>
+          <input type="date" id="fDate" required>
+        </div>
+        <div>
+          <label for="fCat">Kategori</label>
+          <input id="fCat" list="catList" required placeholder="mis. Makan">
+        </div>
+        <div>
+          <label for="fAmt">Nominal</label>
+          <div class="rp"><span>Rp</span><input id="fAmt" inputmode="numeric" required placeholder="0"></div>
+        </div>
+        <div class="full">
+          <label for="fNote">Catatan (opsional)</label>
+          <input id="fNote" placeholder="mis. makan siang warteg">
+        </div>
+      </div>
+      <datalist id="catList"></datalist>
+      <div class="actions">
+        <button class="primary" type="submit" id="btnSave">Simpan</button>
+        <button type="button" id="btnCancel" hidden>Batal edit</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h2>Riwayat</h2>
+    <div class="filters">
+      <div><label for="flMonth">Bulan</label><input type="month" id="flMonth"></div>
+      <div><label for="flType">Jenis</label>
+        <select id="flType"><option value="">Semua</option><option value="in">Pemasukan</option><option value="out">Pengeluaran</option></select></div>
+      <div><label for="flCat">Kategori</label><select id="flCat"><option value="">Semua</option></select></div>
+      <div class="full"><label for="flQ">Cari</label><input id="flQ" placeholder="kata kunci catatan atau kategori"></div>
+    </div>
+
+    <div class="list" id="list"></div>
+    <div class="empty" id="empty" hidden>Belum ada transaksi di periode ini.</div>
+
+    <div class="tools">
+      <button id="btnCsv">Ekspor CSV</button>
+      <button id="btnBackup">Backup JSON</button>
+      <button id="btnRestore">Restore JSON</button>
+      <input type="file" id="fileRestore" accept="application/json" hidden>
+    </div>
+    <div class="hint">Data tersimpan di browser ini saja. Rutin backup, terutama sebelum membersihkan data browser.</div>
+  </div>
+</div>
+
+<script>
+const KEY = 'pembukuan_v1';
+const DEFAULT_CATS = ['Gaji','Usaha','Makan','Transport','Tagihan','Belanja','Kesehatan','Hiburan','Tabungan','Lainnya'];
+let tx = load();
+let editId = null;
+let curType = 'out';
+
+const $ = id => document.getElementById(id);
+const fmtNum = n => Math.round(n).toLocaleString('id-ID');
+const rp = n => (n < 0 ? '−' : '') + 'Rp ' + fmtNum(Math.abs(n));
+const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const BULAN_PANJANG = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const tgl = s => { const [y,m,d] = s.split('-'); return `${+d} ${BULAN[+m-1]} ${y}`; };
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const digits = s => String(s).replace(/\D/g, '');
+
+function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; } }
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(tx)); }
+  catch(e){ alert('Gagal menyimpan ke browser. Coba Backup JSON dan cek pengaturan browser.'); }
+}
+
+/* ---------- input nominal dengan format rupiah ---------- */
+$('fAmt').addEventListener('input', e => {
+  const d = digits(e.target.value).replace(/^0+/, '');
+  e.target.value = d ? Number(d).toLocaleString('id-ID') : '';
+});
+
+/* ---------- jenis transaksi ---------- */
+function setType(v){
+  curType = v;
+  document.querySelectorAll('#seg button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+}
+$('seg').addEventListener('click', e => { if (e.target.dataset.v) setType(e.target.dataset.v); });
+
+/* ---------- kategori ---------- */
+function cats(){ return [...new Set([...DEFAULT_CATS, ...tx.map(t => t.cat)])].sort((a,b) => a.localeCompare(b,'id')); }
+function refreshCats(){
+  const list = cats();
+  $('catList').innerHTML = list.map(c => `<option value="${esc(c)}">`).join('');
+  const cur = $('flCat').value;
+  $('flCat').innerHTML = '<option value="">Semua</option>' + list.map(c => `<option>${esc(c)}</option>`).join('');
+  $('flCat').value = list.includes(cur) ? cur : '';
+}
+
+/* ---------- filter & render ---------- */
+function filtered(){
+  const m = $('flMonth').value, ty = $('flType').value, ct = $('flCat').value, q = $('flQ').value.trim().toLowerCase();
+  return tx.filter(t =>
+    (!m || t.date.startsWith(m)) && (!ty || t.type === ty) && (!ct || t.cat === ct) &&
+    (!q || (t.note || '').toLowerCase().includes(q) || t.cat.toLowerCase().includes(q))
+  ).sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+}
+
+function render(){
+  const list = filtered();
+  let tin = 0, tout = 0;
+  list.forEach(t => t.type === 'in' ? tin += t.amount : tout += t.amount);
+  const bal = tin - tout;
+  $('sumIn').textContent = rp(tin);
+  $('sumOut').textContent = rp(tout);
+  $('sumBal').textContent = rp(bal);
+  $('sumBal').className = bal >= 0 ? 'pos' : 'neg';
+
+  const m = $('flMonth').value;
+  $('subtitle').textContent = m ? `Periode ${BULAN_PANJANG[+m.slice(5,7)-1]} ${m.slice(0,4)}` : 'Semua periode';
+
+  $('list').innerHTML = list.map(t => `
+    <div class="row">
+      <div class="main">
+        <div class="top"><span class="badge ${t.type}">${esc(t.cat)}</span><span class="date">${tgl(t.date)}</span></div>
+        ${t.note ? `<div class="note">${esc(t.note)}</div>` : ''}
+      </div>
+      <div class="amt ${t.type}">${t.type === 'in' ? '+' : '−'} ${rp(t.amount)}</div>
+      <div class="acts">
+        <button class="link" data-edit="${t.id}">Edit</button>
+        <button class="link del" data-del="${t.id}">Hapus</button>
+      </div>
+    </div>`).join('');
+  $('list').hidden = list.length === 0;
+  $('empty').hidden = list.length > 0;
+}
+
+/* ---------- form ---------- */
+function resetForm(){
+  editId = null;
+  $('form').reset();
+  $('fDate').value = today();
+  setType('out');
+  $('formTitle').textContent = 'Catat transaksi';
+  $('btnSave').textContent = 'Simpan';
+  $('btnCancel').hidden = true;
+}
+
+$('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const rec = {
+    id: editId || uid(),
+    date: $('fDate').value,
+    type: curType,
+    cat: $('fCat').value.trim(),
+    amount: Number(digits($('fAmt').value)),
+    note: $('fNote').value.trim()
+  };
+  if (!rec.cat || !(rec.amount > 0)) { $('fAmt').focus(); return; }
+  if (editId) tx = tx.map(t => t.id === editId ? rec : t); else tx.push(rec);
+  save();
+  // pastikan transaksi baru terlihat di filter bulan
+  if ($('flMonth').value && !rec.date.startsWith($('flMonth').value)) $('flMonth').value = rec.date.slice(0,7);
+  refreshCats(); resetForm(); render();
+  $('fAmt').focus();
+});
+$('btnCancel').onclick = resetForm;
+
+$('list').addEventListener('click', e => {
+  const ed = e.target.dataset.edit, del = e.target.dataset.del;
+  if (ed){
+    const t = tx.find(x => x.id === ed); if (!t) return;
+    editId = t.id;
+    setType(t.type);
+    $('fDate').value = t.date; $('fCat').value = t.cat;
+    $('fAmt').value = fmtNum(t.amount); $('fNote').value = t.note || '';
+    $('formTitle').textContent = 'Edit transaksi';
+    $('btnSave').textContent = 'Update';
+    $('btnCancel').hidden = false;
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  if (del && confirm('Hapus transaksi ini?')){
+    tx = tx.filter(x => x.id !== del);
+    save(); refreshCats(); render();
+    if (editId === del) resetForm();
+  }
+});
+
+['flMonth','flType','flCat'].forEach(id => $(id).addEventListener('change', render));
+$('flQ').addEventListener('input', render);
+
+/* ---------- ekspor / backup ---------- */
+function download(name, content, type){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type}));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+$('btnCsv').onclick = () => {
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const rows = [['Tanggal','Jenis','Kategori','Nominal (Rp)','Catatan']]
+    .concat(filtered().map(t => [t.date, t.type === 'in' ? 'Pemasukan' : 'Pengeluaran', t.cat, t.amount, t.note || '']));
+  download('pembukuan-' + today() + '.csv', '\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
+};
+
+$('btnBackup').onclick = () => download('pembukuan-backup-' + today() + '.json', JSON.stringify(tx, null, 2), 'application/json');
+
+$('btnRestore').onclick = () => $('fileRestore').click();
+$('fileRestore').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!Array.isArray(data)) throw 0;
+    const clean = data.filter(t => t && t.date && t.cat && Number(t.amount) > 0 && (t.type === 'in' || t.type === 'out'))
+      .map(t => ({ id: String(t.id || uid()), date: String(t.date), type: t.type, cat: String(t.cat), amount: Number(t.amount), note: String(t.note || '') }));
+    if (!confirm(`Ditemukan ${clean.length} transaksi. Gabungkan ke data sekarang?`)) return;
+    const ids = new Set(tx.map(t => t.id));
+    clean.forEach(t => { if (!ids.has(t.id)) tx.push(t); });
+    save(); refreshCats(); render();
+  } catch(err){ alert('File tidak valid.'); }
+  e.target.value = '';
+});
+
+/* ---------- offline / install (hanya jalan kalau dibuka lewat http/https) ---------- */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+/* ---------- init ---------- */
+$('flMonth').value = today().slice(0,7);
+resetForm(); refreshCats(); render();
+</script>
+</body>
+</html>
